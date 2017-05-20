@@ -36,30 +36,25 @@ fn run() -> Result<(), image::ImageError> {
 }
 
 fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, image::ImageError> {
-    const MARGIN: u32 = 40;
-    const BLACK_WIDTH: u32 = 4;
+    const MARGIN: u32 = 20;
 
     // create resized image
     let dims = image.dimensions();
     let mut resized = image::DynamicImage::new_rgba8(dims.0 + MARGIN * 2, dims.1 + MARGIN * 2);
-    resized.copy_from(&image, MARGIN, MARGIN);
 
-    // add border
+    // fill with black
     let black = image::Rgba::<u8> { data: [0, 0, 0, 255] };
-    for i in MARGIN..dims.0 + MARGIN {
-        for j in MARGIN - BLACK_WIDTH..MARGIN {
-            resized.put_pixel(i, j, black);
+    for y in MARGIN + 1..dims.1 + MARGIN {
+        for x in MARGIN + 1..dims.0 + MARGIN {
+            resized.put_pixel(x, y, black);
         }
     }
 
-    // blur top edge
-    {
-        let sub = resized
-            .sub_image(0, 0, dims.0 + MARGIN * 2, MARGIN)
-            .to_image();
-        let sub = image::imageops::blur(&sub, 7.0);
-        resized.copy_from(&sub, 0, 0);
-    }
+    // blur it
+    let mut resized = resized.blur(7.0);
+
+    // copy original image across
+    resized.copy_from(&image, MARGIN, MARGIN);
 
 
     Ok(resized)
