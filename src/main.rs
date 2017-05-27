@@ -35,6 +35,16 @@ fn run() -> Result<(), image::ImageError> {
 
 }
 
+type Tuple = (u32, u32);
+struct BlurredEdge {
+    pub orig_pos: Tuple,
+    pub dims: Tuple,
+
+    pub paste_pos: Tuple,
+    pub rotated_offset: Tuple,
+}
+
+
 fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, image::ImageError> {
     const MARGIN: u32 = 20;
     const BLUR_MARGIN: u32 = 10;
@@ -53,23 +63,34 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
         }
     }
 
-    // blur edges
-    // TODO ooer
-    let edges =
-        [((0, 0, dims.0, MARGIN + BLUR_MARGIN), (0, 0), (0, dims_orig.1 + BLUR_MARGIN)),
-         ((0, MARGIN + BLUR_MARGIN, MARGIN + BLUR_MARGIN, dims.1 - MARGIN * 2 - BLUR_MARGIN * 2),
-          (0, MARGIN + BLUR_MARGIN),
-          (dims_orig.0 + BLUR_MARGIN, 0))];
+    let edges = [// horizontal
+                 BlurredEdge {
+                     orig_pos: (0, 0),
+                     dims: (dims.0, MARGIN + BLUR_MARGIN),
+                     paste_pos: (0, 0),
+                     rotated_offset: (0, dims_orig.1 + BLUR_MARGIN),
+                 },
+
+                 // vertical
+                 BlurredEdge {
+                     orig_pos: (0, MARGIN + BLUR_MARGIN),
+                     dims: (MARGIN + BLUR_MARGIN, dims.1 - MARGIN * 2 - BLUR_MARGIN * 2),
+                     paste_pos: (0, MARGIN + BLUR_MARGIN),
+                     rotated_offset: (dims_orig.0 + BLUR_MARGIN, 0),
+                 }];
 
     // apply blurred edges
-    for tup in &edges {
-        let ((x, y, w, h), (paste_x, paste_y), (rot_off_x, rot_off_y)) = *tup;
-        let view = resized.sub_image(x, y, w, h).to_image();
+    for edge in &edges {
+        let view = resized
+            .sub_image(edge.orig_pos.0, edge.orig_pos.1, edge.dims.0, edge.dims.1)
+            .to_image();
         let view = image::imageops::blur(&view, 7.0);
-        resized.copy_from(&view, paste_x, paste_y);
+        resized.copy_from(&view, edge.paste_pos.0, edge.paste_pos.1);
 
         let rot = image::imageops::rotate180(&view);
-        resized.copy_from(&rot, paste_x + rot_off_x, paste_y + rot_off_y);
+        resized.copy_from(&rot,
+                          edge.paste_pos.0 + edge.rotated_offset.0,
+                          edge.paste_pos.1 + edge.rotated_offset.1);
     }
 
     // copy original image across
