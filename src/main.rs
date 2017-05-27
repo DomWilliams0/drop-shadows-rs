@@ -68,7 +68,7 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
                      orig_pos: (0, 0),
                      dims: (dims.0, MARGIN + BLUR_MARGIN),
                      paste_pos: (0, 0),
-                     rotated_offset: (0, dims_orig.1 + BLUR_MARGIN),
+                     rotated_offset: (0, MARGIN + dims_orig.1 - BLUR_MARGIN),
                  },
 
                  // vertical
@@ -76,7 +76,7 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
                      orig_pos: (0, MARGIN + BLUR_MARGIN),
                      dims: (MARGIN + BLUR_MARGIN, dims.1 - MARGIN * 2 - BLUR_MARGIN * 2),
                      paste_pos: (0, MARGIN + BLUR_MARGIN),
-                     rotated_offset: (dims_orig.0 + BLUR_MARGIN, 0),
+                     rotated_offset: (MARGIN + dims_orig.0 - BLUR_MARGIN, 0),
                  }];
 
     // apply blurred edges
