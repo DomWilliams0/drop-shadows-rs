@@ -17,18 +17,24 @@ fn main() {
 }
 
 fn run() -> Result<(), image::ImageError> {
-    let in_path = "/tmp/image.png";
-    let out_path = "/tmp/image-pretty.png";
+    let conf = Config {
+        margin: 20,
+        blur_margin: 20,
+        blur_amount: 7.0,
+        path_in: String::from("/tmp/image.png"),
+        path_out: String::from("/tmp/image-pretty.png"),
+    };
 
-    let image = image::open(in_path)?;
+    let image = image::open(&conf.path_in)?;
     println!("Loaded image");
 
+
     println!("Messing with it...");
-    let image = mess_with_image(image)?;
+    let image = mess_with_image(image, &conf)?;
 
     // save
-    println!("Saving to '{}'", out_path);
-    let mut out_file = fs::File::create(out_path)?;
+    println!("Saving to '{}'", conf.path_out);
+    let mut out_file = fs::File::create(conf.path_out)?;
     image.save(&mut out_file, image::ImageFormat::PNG)?;
 
     Ok(())
@@ -44,21 +50,30 @@ struct BlurredEdge {
     pub rotated_offset: Tuple,
 }
 
+struct Config {
+    margin: u32,
+    blur_margin: u32,
 
-fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, image::ImageError> {
-    const MARGIN: u32 = 20;
-    const BLUR_MARGIN: u32 = 10;
+    blur_amount: f32,
 
+    path_in: String,
+    path_out: String,
+}
+
+
+fn mess_with_image(image: image::DynamicImage,
+                   config: &Config)
+                   -> Result<image::DynamicImage, image::ImageError> {
     // create resized image
     let dims_orig = image.dimensions();
-    let mut resized = image::DynamicImage::new_rgba8(dims_orig.0 + MARGIN * 2,
-                                                     dims_orig.1 + MARGIN * 2);
+    let mut resized = image::DynamicImage::new_rgba8(dims_orig.0 + config.margin * 2,
+                                                     dims_orig.1 + config.margin * 2);
     let dims = resized.dimensions();
 
     // create shadow
     let black = image::Rgba::<u8> { data: [0, 0, 0, 255] };
-    for y in MARGIN + 1..dims.1 - MARGIN {
-        for x in MARGIN + 1..dims.0 - MARGIN {
+    for y in config.margin + 1..dims.1 - config.margin {
+        for x in config.margin + 1..dims.0 - config.margin {
             resized.put_pixel(x, y, black);
         }
     }
@@ -66,17 +81,18 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
     let edges = [// horizontal
                  BlurredEdge {
                      orig_pos: (0, 0),
-                     dims: (dims.0, MARGIN + BLUR_MARGIN),
+                     dims: (dims.0, config.margin + config.blur_margin),
                      paste_pos: (0, 0),
-                     rotated_offset: (0, MARGIN + dims_orig.1 - BLUR_MARGIN),
+                     rotated_offset: (0, config.margin + dims_orig.1 - config.blur_margin),
                  },
 
                  // vertical
                  BlurredEdge {
-                     orig_pos: (0, MARGIN + BLUR_MARGIN),
-                     dims: (MARGIN + BLUR_MARGIN, dims.1 - MARGIN * 2 - BLUR_MARGIN * 2),
-                     paste_pos: (0, MARGIN + BLUR_MARGIN),
-                     rotated_offset: (MARGIN + dims_orig.0 - BLUR_MARGIN, 0),
+                     orig_pos: (0, config.margin + config.blur_margin),
+                     dims: (config.margin + config.blur_margin,
+                            dims.1 - config.margin * 2 - config.blur_margin * 2),
+                     paste_pos: (0, config.margin + config.blur_margin),
+                     rotated_offset: (config.margin + dims_orig.0 - config.blur_margin, 0),
                  }];
 
     // apply blurred edges
@@ -84,7 +100,7 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
         let view = resized
             .sub_image(edge.orig_pos.0, edge.orig_pos.1, edge.dims.0, edge.dims.1)
             .to_image();
-        let view = image::imageops::blur(&view, 7.0);
+        let view = image::imageops::blur(&view, config.blur_amount);
         assert!(resized.copy_from(&view, edge.paste_pos.0, edge.paste_pos.1));
 
         let rot = image::imageops::rotate180(&view);
@@ -94,7 +110,7 @@ fn mess_with_image(image: image::DynamicImage) -> Result<image::DynamicImage, im
     }
 
     // copy original image across
-    resized.copy_from(&image, MARGIN, MARGIN);
+    resized.copy_from(&image, config.margin, config.margin);
 
     Ok(resized)
 }
