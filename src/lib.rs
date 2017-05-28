@@ -7,6 +7,8 @@ use image::{DynamicImage, GenericImage};
 use std::path::Path;
 use std::ops::Deref;
 
+pub type ShadowResult<T> = Result<T, ShadowError>;
+
 pub enum ImageInput<'a> {
     Image(&'a DynamicImage),
     File(&'a Path),
@@ -62,7 +64,7 @@ impl<'a> DropShadowBuilder<'a> {
         self
     }
 
-    pub fn apply(self) -> Result<DropShadow, ShadowError> {
+    pub fn apply(self) -> ShadowResult<DropShadow> {
         self.validate()?;
 
         let image = match self.input {
@@ -73,20 +75,20 @@ impl<'a> DropShadowBuilder<'a> {
         Ok(DropShadow { image: image })
     }
 
-    fn validate(&self) -> Result<(), ShadowError> {
+    fn validate(&self) -> ShadowResult<()> {
         // TODO blur_margin > margin?
         // TODO blur_amount > 0?
 
         Ok(())
     }
 
-    fn apply_drop_shadow(&self, image: &DynamicImage) -> Result<DynamicImage, ShadowError> {
+    fn apply_drop_shadow(&self, image: &DynamicImage) -> ShadowResult<DynamicImage> {
         apply_drop_shadow(image, &self.config)
     }
 }
 
 impl DropShadow {
-    pub fn to_file(&self, path: &Path) -> Result<(), ShadowError> {
+    pub fn to_file(&self, path: &Path) -> ShadowResult<()> {
         Err(ShadowError::NotImplemented)
     }
 
@@ -126,7 +128,7 @@ struct BlurredEdge {
     pub rotated_offset: Tuple,
 }
 
-fn apply_drop_shadow(image: &DynamicImage, config: &Config) -> Result<DynamicImage, ShadowError> {
+fn apply_drop_shadow(image: &DynamicImage, config: &Config) -> ShadowResult<DynamicImage> {
 
     // create resized image
     let dims_orig = image.dimensions();
