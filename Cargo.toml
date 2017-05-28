@@ -1,6 +1,6 @@
 [package]
 name = "drop-shadows"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Dom Williams <me@domwillia.ms>"]
 
 [dependencies]
