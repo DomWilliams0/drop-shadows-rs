@@ -3,8 +3,9 @@ extern crate image;
 mod error;
 pub use error::ShadowError;
 
-use image::{DynamicImage, GenericImage};
+use image::{DynamicImage, GenericImage, ImageFormat};
 use std::path::Path;
+use std::fs;
 use std::ops::Deref;
 
 pub type ShadowResult<T> = Result<T, ShadowError>;
@@ -89,7 +90,10 @@ impl<'a> DropShadowBuilder<'a> {
 
 impl DropShadow {
     pub fn to_file(&self, path: &Path) -> ShadowResult<()> {
-        Err(ShadowError::NotImplemented)
+        let mut out_file = fs::File::create(path)?;
+        self.image.save(&mut out_file, ImageFormat::PNG)?;
+
+        Ok(())
     }
 
     pub fn get_image(self) -> DynamicImage {
