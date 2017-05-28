@@ -20,10 +20,11 @@ pub struct DropShadowBuilder<'a> {
     input: ImageInput<'a>,
 }
 
-struct Config {
-    margin: u32,
-    blur_margin: u32,
-    blur_amount: f32,
+#[derive(Copy, Clone)]
+pub struct Config {
+    pub margin: u32,
+    pub blur_margin: u32,
+    pub blur_amount: f32,
 }
 
 pub struct DropShadow {
@@ -60,7 +61,12 @@ impl<'a> DropShadowBuilder<'a> {
         self
     }
 
-    pub fn input(&'a mut self, input: ImageInput<'a>) -> &'a mut Self {
+    pub fn config(&mut self, config: &Config) -> &mut Self {
+        self.config = config.clone();
+        self
+    }
+
+    pub fn input(&mut self, input: ImageInput<'a>) -> &mut Self {
         self.input = input;
         self
     }
