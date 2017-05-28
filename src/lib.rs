@@ -71,9 +71,7 @@ impl<'a> DropShadowBuilder<'a> {
         self
     }
 
-    pub fn apply(&self) -> ShadowResult<DropShadow> {
-        self.validate()?;
-
+    pub fn apply(&mut self) -> ShadowResult<DropShadow> {
         let image = match self.input {
             ImageInput::Image(image) => self.apply_drop_shadow(image),
             ImageInput::File(path) => self.apply_drop_shadow(&image::open(path)?),
@@ -82,14 +80,23 @@ impl<'a> DropShadowBuilder<'a> {
         Ok(DropShadow { image: image })
     }
 
-    fn validate(&self) -> ShadowResult<()> {
-        // TODO blur_margin > margin?
-        // TODO blur_amount > 0?
+    fn validate(&mut self, dimensions: Tuple) {
+        let dimensions = (dimensions.0 + self.config.margin * 2,
+                          dimensions.1 + self.config.margin * 2);
+        let max = std::cmp::max(dimensions.0, dimensions.1);
 
-        Ok(())
+        // range checks
+        if self.config.blur_margin > self.config.margin + max {
+            self.config.blur_margin = self.config.margin + max;
+        }
+
+        if dimensions.1 < 2 * self.config.margin + 2 * self.config.blur_margin {
+            self.config.blur_margin = (dimensions.1 - 2 * self.config.margin) / 2;
+        }
     }
 
-    fn apply_drop_shadow(&self, image: &DynamicImage) -> ShadowResult<DynamicImage> {
+    fn apply_drop_shadow(&mut self, image: &DynamicImage) -> ShadowResult<DynamicImage> {
+        self.validate(image.dimensions());
         apply_drop_shadow(image, &self.config)
     }
 }
