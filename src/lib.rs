@@ -4,10 +4,11 @@ pub mod error;
 pub use error::ShadowError;
 
 use image::DynamicImage;
+use std::path::Path;
 
 pub enum ImageInput<'a> {
     Image(&'a DynamicImage),
-    File(String), // TODO Path
+    File(&'a Path),
 }
 
 pub struct DropShadowBuilder<'a> {
@@ -30,7 +31,7 @@ impl<'a> DropShadowBuilder<'a> {
         }
     }
 
-    pub fn from_file(path: String) -> Self {
+    pub fn from_file(path: &'a Path) -> Self {
         Self {
             input: Some(ImageInput::File(path)),
             ..Default::default()
@@ -64,7 +65,7 @@ impl<'a> DropShadowBuilder<'a> {
 }
 
 impl DropShadow {
-    pub fn to_file(&self, path: String) -> Result<(), ShadowError> {
+    pub fn to_file(&self, path: &Path) -> Result<(), ShadowError> {
         Err(ShadowError::NotImplemented)
     }
 }
