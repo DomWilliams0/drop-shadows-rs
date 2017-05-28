@@ -5,6 +5,7 @@ pub use error::ShadowError;
 
 use image::DynamicImage;
 use std::path::Path;
+use std::ops::Deref;
 
 pub enum ImageInput<'a> {
     Image(&'a DynamicImage),
@@ -67,6 +68,22 @@ impl<'a> DropShadowBuilder<'a> {
 impl DropShadow {
     pub fn to_file(&self, path: &Path) -> Result<(), ShadowError> {
         Err(ShadowError::NotImplemented)
+    }
+
+    pub fn get_image(self) -> DynamicImage {
+        self.image
+    }
+
+    pub fn get_image_ref(&self) -> &DynamicImage {
+        &self.image
+    }
+}
+
+impl Deref for DropShadow {
+    type Target = DynamicImage;
+
+    fn deref(&self) -> &Self::Target {
+        &self.image
     }
 }
 
