@@ -167,13 +167,16 @@ fn apply_drop_shadow(image: &DynamicImage, config: &Config) -> ShadowResult<Dyna
             .sub_image(edge.orig_pos.0, edge.orig_pos.1, edge.dims.0, edge.dims.1)
             .to_image();
         let view = image::imageops::blur(&view, config.blur_amount);
-        // TODO remove asserts
-        assert!(resized.copy_from(&view, edge.paste_pos.0, edge.paste_pos.1));
+        if !resized.copy_from(&view, edge.paste_pos.0, edge.paste_pos.1) {
+            return Err(ShadowError::Image(String::from("Failed to apply an unrotated edge")));
+        }
 
         let rot = image::imageops::rotate180(&view);
-        assert!(resized.copy_from(&rot,
-                                  edge.paste_pos.0 + edge.rotated_offset.0,
-                                  edge.paste_pos.1 + edge.rotated_offset.1));
+        if !resized.copy_from(&rot,
+                              edge.paste_pos.0 + edge.rotated_offset.0,
+                              edge.paste_pos.1 + edge.rotated_offset.1) {
+            return Err(ShadowError::Image(String::from("Failed to apply a rotated edge")));
+        }
     }
 
     // copy original image across

@@ -5,7 +5,8 @@ use std::error::Error;
 #[derive(Debug)]
 pub enum ShadowError {
     Configuration(String),
-    Image(ImageError),
+    ImageLibrary(ImageError),
+    Image(String),
     Io(io::Error),
     NotImplemented,
 }
@@ -14,7 +15,8 @@ impl Error for ShadowError {
     fn description(&self) -> &str {
         match *self {
             ShadowError::Configuration(_) => "configuration error",
-            ShadowError::Image(ref err) => err.description(),
+            ShadowError::ImageLibrary(ref err) => err.description(),
+            ShadowError::Image(_) => "image error",
             ShadowError::Io(ref err) => err.description(),
             ShadowError::NotImplemented => "not implemented",
         }
@@ -22,7 +24,7 @@ impl Error for ShadowError {
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            ShadowError::Image(ref err) => err.cause(),
+            ShadowError::ImageLibrary(ref err) => err.cause(),
             ShadowError::Io(ref err) => err.cause(),
             _ => None,
         }
@@ -33,7 +35,8 @@ impl fmt::Display for ShadowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ShadowError::Configuration(ref msg) => write!(f, "Configuration error: {}", msg),
-            ShadowError::Image(ref err) => err.fmt(f),
+            ShadowError::ImageLibrary(ref err) => err.fmt(f),
+            ShadowError::Image(ref msg) => write!(f, "Image error: {}", msg),
             ShadowError::Io(ref err) => err.fmt(f),
             ShadowError::NotImplemented => write!(f, "Not currently implemented"),
         }
@@ -48,6 +51,6 @@ impl From<io::Error> for ShadowError {
 
 impl From<ImageError> for ShadowError {
     fn from(err: ImageError) -> ShadowError {
-        ShadowError::Image(err)
+        ShadowError::ImageLibrary(err)
     }
 }
