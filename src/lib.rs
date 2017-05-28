@@ -60,8 +60,20 @@ impl<'a> DropShadowBuilder<'a> {
     }
 
     pub fn apply(&self) -> Result<DropShadow, ShadowError> {
-        // TODO validation
+        self.validate()?;
+
         Err(ShadowError::NotImplemented)
+    }
+
+    fn validate(&self) -> Result<(), ShadowError> {
+        if self.input.is_none() {
+            return Err(ShadowError::Configuration(String::from("Input image was not specified")));
+        }
+
+        // TODO blur_margin > margin?
+        // TODO blur_amount > 0?
+
+        Ok(())
     }
 }
 
