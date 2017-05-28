@@ -5,35 +5,34 @@ pub use error::ShadowError;
 
 use image::DynamicImage;
 
-pub enum ImageIo {
-    Image(DynamicImage),
-    File(String),
+pub enum ImageInput<'a> {
+    Image(&'a DynamicImage),
+    File(String), // TODO Path
 }
 
-pub struct DropShadow {
+pub struct DropShadowBuilder<'a> {
     margin: u32,
     blur_margin: u32,
     blur_amount: f32,
 
-    input: Option<ImageIo>,
-    output: Option<ImageIo>,
+    input: Option<ImageInput<'a>>,
 }
 
-impl DropShadow {
-    pub fn new() -> Self {
-        Default::default()
-    }
+pub struct DropShadow {
+    image: DynamicImage,
+}
 
-    pub fn from_image(image: DynamicImage) -> Self {
+impl<'a> DropShadowBuilder<'a> {
+    pub fn from_image(image: &'a DynamicImage) -> Self {
         Self {
-            input: Some(ImageIo::Image(image)),
+            input: Some(ImageInput::Image(image)),
             ..Default::default()
         }
     }
 
     pub fn from_file(path: String) -> Self {
         Self {
-            input: Some(ImageIo::File(path)),
+            input: Some(ImageInput::File(path)),
             ..Default::default()
         }
     }
@@ -53,27 +52,27 @@ impl DropShadow {
         self
     }
 
-    pub fn input(&mut self, input: ImageIo) -> &mut Self {
+    pub fn input(&'a mut self, input: ImageInput<'a>) -> &'a mut Self {
         self.input = Some(input);
         self
     }
 
-    pub fn output(&mut self, output: ImageIo) -> &mut Self {
-        self.output = Some(output);
-        self
-    }
-
-    pub fn apply(&self) -> Result<(), ShadowError> {
+    pub fn apply(&self) -> Result<DropShadow, ShadowError> {
         // TODO validation
         Err(ShadowError::NotImplemented)
     }
 }
 
-impl Default for DropShadow {
+impl DropShadow {
+    pub fn to_file(&self, path: String) -> Result<(), ShadowError> {
+        Err(ShadowError::NotImplemented)
+    }
+}
+
+impl<'a> Default for DropShadowBuilder<'a> {
     fn default() -> Self {
-        DropShadow {
+        Self {
             input: None,
-            output: None,
 
             margin: 20,
             blur_margin: 20,
