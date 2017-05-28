@@ -1,6 +1,6 @@
 extern crate image;
 
-pub mod error;
+mod error;
 pub use error::ShadowError;
 
 use image::DynamicImage;
