@@ -71,7 +71,7 @@ impl<'a> DropShadowBuilder<'a> {
         self
     }
 
-    pub fn apply(self) -> ShadowResult<DropShadow> {
+    pub fn apply(&self) -> ShadowResult<DropShadow> {
         self.validate()?;
 
         let image = match self.input {
