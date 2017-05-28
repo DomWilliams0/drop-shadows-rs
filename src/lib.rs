@@ -13,11 +13,14 @@ pub enum ImageInput<'a> {
 }
 
 pub struct DropShadowBuilder<'a> {
+    config: Config,
+    input: ImageInput<'a>,
+}
+
+struct Config {
     margin: u32,
     blur_margin: u32,
     blur_amount: f32,
-
-    input: Option<ImageInput<'a>>,
 }
 
 pub struct DropShadow {
@@ -27,35 +30,35 @@ pub struct DropShadow {
 impl<'a> DropShadowBuilder<'a> {
     pub fn from_image(image: &'a DynamicImage) -> Self {
         Self {
-            input: Some(ImageInput::Image(image)),
-            ..Default::default()
+            input: ImageInput::Image(image),
+            config: Default::default(),
         }
     }
 
     pub fn from_file(path: &'a Path) -> Self {
         Self {
-            input: Some(ImageInput::File(path)),
-            ..Default::default()
+            input: ImageInput::File(path),
+            config: Default::default(),
         }
     }
 
     pub fn margin(&mut self, margin: u32) -> &mut Self {
-        self.margin = margin;
+        self.config.margin = margin;
         self
     }
 
     pub fn blur_margin(&mut self, blur_margin: u32) -> &mut Self {
-        self.blur_margin = blur_margin;
+        self.config.blur_margin = blur_margin;
         self
     }
 
     pub fn blur_amount(&mut self, blur_amount: f32) -> &mut Self {
-        self.blur_amount = blur_amount;
+        self.config.blur_amount = blur_amount;
         self
     }
 
     pub fn input(&'a mut self, input: ImageInput<'a>) -> &'a mut Self {
-        self.input = Some(input);
+        self.input = input;
         self
     }
 
@@ -66,10 +69,6 @@ impl<'a> DropShadowBuilder<'a> {
     }
 
     fn validate(&self) -> Result<(), ShadowError> {
-        if self.input.is_none() {
-            return Err(ShadowError::Configuration(String::from("Input image was not specified")));
-        }
-
         // TODO blur_margin > margin?
         // TODO blur_amount > 0?
 
@@ -99,11 +98,9 @@ impl Deref for DropShadow {
     }
 }
 
-impl<'a> Default for DropShadowBuilder<'a> {
+impl Default for Config {
     fn default() -> Self {
         Self {
-            input: None,
-
             margin: 20,
             blur_margin: 20,
             blur_amount: 7.0,
