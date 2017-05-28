@@ -201,3 +201,53 @@ fn apply_drop_shadow(image: &DynamicImage, config: &Config) -> ShadowResult<Dyna
 
     Ok(resized)
 }
+
+#[cfg(test)]
+mod tests {
+    use image::*;
+    use std::path::PathBuf;
+    use super::*;
+
+    fn get_test_path(name: &str) -> PathBuf {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("test-resources");
+        path.push(name);
+        path
+    }
+
+    fn get_test_image(name: &str) -> DynamicImage {
+        let image = open(get_test_path(name));
+        assert!(image.is_ok());
+        image.unwrap()
+    }
+
+    fn are_equal(a: &DynamicImage, b: &DynamicImage) -> bool {
+        let apix = a.raw_pixels();
+        let bpix = b.raw_pixels();
+
+        apix == bpix
+    }
+
+    #[test]
+    fn from_image() {
+        let square = get_test_image("square.png");
+        let compare = get_test_image("square-20-10-7.png");
+
+        let res = DropShadowBuilder::from_image(&square).margin(20).blur_margin(10).blur_amount(7.0).apply();
+        assert!(res.is_ok());
+        let shadowed = res.unwrap();
+
+        assert!(are_equal(&shadowed, &compare));
+    }
+
+    #[test]
+    fn from_file() {
+        let compare = get_test_image("square-20-10-7.png");
+
+        let res = DropShadowBuilder::from_file(get_test_path("square.png").as_path()).margin(20).blur_margin(10).blur_amount(7.0).apply();
+        assert!(res.is_ok());
+        let shadowed = res.unwrap();
+
+        assert!(are_equal(&shadowed, &compare));
+    }
+}
