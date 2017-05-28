@@ -6,6 +6,7 @@ authors = ["Dom Williams <me@domwillia.ms>"]
 [[bin]]
 path = "src/main.rs"
 name = "drop-shadows"
+doc = false
 
 [dependencies]
 image = "0.13.0"
