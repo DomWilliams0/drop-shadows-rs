@@ -7,6 +7,7 @@ pub enum ShadowError {
     Configuration(String),
     Image(ImageError),
     Io(io::Error),
+    NotImplemented,
 }
 
 impl Error for ShadowError {
@@ -15,6 +16,7 @@ impl Error for ShadowError {
             ShadowError::Configuration(_) => "configuration error",
             ShadowError::Image(ref err) => err.description(),
             ShadowError::Io(ref err) => err.description(),
+            ShadowError::NotImplemented => "not implemented",
         }
     }
 
@@ -33,6 +35,7 @@ impl fmt::Display for ShadowError {
             ShadowError::Configuration(ref msg) => write!(f, "Configuration error: {}", msg),
             ShadowError::Image(ref err) => err.fmt(f),
             ShadowError::Io(ref err) => err.fmt(f),
+            ShadowError::NotImplemented => write!(f, "Not currently implemented"),
         }
     }
 }
