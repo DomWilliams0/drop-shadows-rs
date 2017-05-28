@@ -3,7 +3,7 @@ extern crate image;
 mod error;
 pub use error::ShadowError;
 
-use image::DynamicImage;
+use image::{DynamicImage, GenericImage};
 use std::path::Path;
 use std::ops::Deref;
 
@@ -62,10 +62,15 @@ impl<'a> DropShadowBuilder<'a> {
         self
     }
 
-    pub fn apply(&self) -> Result<DropShadow, ShadowError> {
+    pub fn apply(self) -> Result<DropShadow, ShadowError> {
         self.validate()?;
 
-        Err(ShadowError::NotImplemented)
+        let image = match self.input {
+            ImageInput::Image(image) => self.apply_drop_shadow(image),
+            ImageInput::File(path) => self.apply_drop_shadow(&image::open(path)?),
+        }?;
+
+        Ok(DropShadow { image: image })
     }
 
     fn validate(&self) -> Result<(), ShadowError> {
@@ -73,6 +78,10 @@ impl<'a> DropShadowBuilder<'a> {
         // TODO blur_amount > 0?
 
         Ok(())
+    }
+
+    fn apply_drop_shadow(&self, image: &DynamicImage) -> Result<DynamicImage, ShadowError> {
+        apply_drop_shadow(image, &self.config)
     }
 }
 
@@ -106,4 +115,67 @@ impl Default for Config {
             blur_amount: 7.0,
         }
     }
+}
+
+type Tuple = (u32, u32);
+struct BlurredEdge {
+    pub orig_pos: Tuple,
+    pub dims: Tuple,
+
+    pub paste_pos: Tuple,
+    pub rotated_offset: Tuple,
+}
+
+fn apply_drop_shadow(image: &DynamicImage, config: &Config) -> Result<DynamicImage, ShadowError> {
+
+    // create resized image
+    let dims_orig = image.dimensions();
+    let mut resized = DynamicImage::new_rgba8(dims_orig.0 + config.margin * 2,
+                                              dims_orig.1 + config.margin * 2);
+    let dims = resized.dimensions();
+
+    // create shadow
+    let black = image::Rgba::<u8> { data: [0, 0, 0, 255] };
+    for y in config.margin + 1..dims.1 - config.margin {
+        for x in config.margin + 1..dims.0 - config.margin {
+            resized.put_pixel(x, y, black);
+        }
+    }
+
+    let edges = [// horizontal
+                 BlurredEdge {
+                     orig_pos: (0, 0),
+                     dims: (dims.0, config.margin + config.blur_margin),
+                     paste_pos: (0, 0),
+                     rotated_offset: (0, config.margin + dims_orig.1 - config.blur_margin),
+                 },
+
+                 // vertical
+                 BlurredEdge {
+                     orig_pos: (0, config.margin + config.blur_margin),
+                     dims: (config.margin + config.blur_margin,
+                            dims.1 - config.margin * 2 - config.blur_margin * 2),
+                     paste_pos: (0, config.margin + config.blur_margin),
+                     rotated_offset: (config.margin + dims_orig.0 - config.blur_margin, 0),
+                 }];
+
+    // apply blurred edges
+    for edge in &edges {
+        let view = resized
+            .sub_image(edge.orig_pos.0, edge.orig_pos.1, edge.dims.0, edge.dims.1)
+            .to_image();
+        let view = image::imageops::blur(&view, config.blur_amount);
+        // TODO remove asserts
+        assert!(resized.copy_from(&view, edge.paste_pos.0, edge.paste_pos.1));
+
+        let rot = image::imageops::rotate180(&view);
+        assert!(resized.copy_from(&rot,
+                                  edge.paste_pos.0 + edge.rotated_offset.0,
+                                  edge.paste_pos.1 + edge.rotated_offset.1));
+    }
+
+    // copy original image across
+    resized.copy_from(image, config.margin, config.margin);
+
+    Ok(resized)
 }
