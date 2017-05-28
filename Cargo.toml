@@ -1,5 +1,5 @@
 [package]
-name = "drop-shadows"
+name = "drop_shadows"
 version = "0.2.0"
 authors = ["Dom Williams <me@domwillia.ms>"]
 
