@@ -8,7 +8,6 @@ rust:
     - nightly
     - beta
     - stable
-    - 1.0.0
 
 sudo: true
 before_install:
