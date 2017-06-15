@@ -12,7 +12,7 @@ rust:
 sudo: true
 before_install:
     - sudo apt-get update
-    - sudo apt-get install libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev libbfd-dev
+    - sudo apt-get install libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc binutils-dev
 
 script:
     - cargo build
