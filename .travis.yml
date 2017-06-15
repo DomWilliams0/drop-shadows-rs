@@ -1,30 +1,60 @@
-sudo: false
+# merci https://medium.com/@Razican/continuous-integration-and-code-coverage-report-for-a-rust-project-5dfd4d68fbe5
+
 language: rust
+cache: cargo
+dist: trusty
 
-# merci https://github.com/huonw/travis-cargo
-# necessary for `travis-cargo coveralls --no-sudo`
+rust:
+    - nightly
+    - beta
+    - stable
+    - 1.0.0
+
+sudo: true
+before_install:
+    - sudo apt-get update
+
 addons:
-  apt:
-    packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev # optional: only required for the --verify flag of coveralls
+    apt:
+        packages:
+            - libcurl4-openssl-dev
+            - libelf-dev
+            - libdw-dev
+            - cmake
+            - gcc
+            - binutils-dev
 
-# load travis-cargo
-before_script:
-  - |
-      pip install 'travis-cargo<0.2' --user &&
-      export PATH=$HOME/.local/bin:$PATH
-
-# the main build
 script:
-  - |
-      travis-cargo build &&
-      travis-cargo test
+    - cargo build
+    - cargo test
+    - |
+        if [[ "$TRAVIS_RUST_VERSION" == "nightly" && $CLIPPY ]]; then
+        cargo clippy
+        fi
+
+# Add clippy
+before_script:
+    - |
+        if [[ "$TRAVIS_RUST_VERSION" == "nightly" ]]; then
+        ( ( cargo install clippy && export CLIPPY=true ) || export CLIPPY=false );
+        fi
+    - export PATH=$PATH:~/.cargo/bin
+
+# Coverage report
 after_success:
-  # measure code coverage and upload to coveralls.io (the verify
-  # argument mitigates kcov crashes due to malformed debuginfo, at the
-  # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis-cargo coveralls --no-sudo --verify; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/iomrascalai-*; fi
+    - |
+        if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_RUST_VERSION" == "stable" ]]; then
+        wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+        tar xzf master.tar.gz &&
+        cd kcov-master &&
+        mkdir build &&
+        cd build &&
+        cmake .. &&
+        make &&
+        sudo make install &&
+        cd ../.. &&
+        rm -rf kcov-master &&
+        for file in target/debug/drop_shadows-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+        bash <(curl -s https://codecov.io/bash) &&
+        echo "Uploaded code coverage"
+        fi
